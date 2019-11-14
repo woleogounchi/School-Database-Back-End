@@ -53,5 +53,5 @@ module.exports = (sequelize) => {
     }
   }, { sequelize });
 
-  return Person;
+  return User;
 };
