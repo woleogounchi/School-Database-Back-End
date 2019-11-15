@@ -3,6 +3,11 @@ const Sequelize = require('sequelize');
 module.exports = (sequelize) => {
   class User extends Sequelize.Model {}
   User.init({
+    id: {
+      type: Sequelize.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+    },
     firstName: {
       type: Sequelize.STRING,
       allowNull: false,
@@ -52,6 +57,16 @@ module.exports = (sequelize) => {
       },
     }
   }, { sequelize });
+  
+  // hasMany association between user and course
+  User.associate = (models) => {
+    User.hasMany(models.Course, {
+      foreignKey: {
+        fieldName: 'userId',
+        allowNull: false,
+      },
+    });
+  };
 
   return User;
 };
