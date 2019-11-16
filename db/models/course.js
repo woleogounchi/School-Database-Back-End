@@ -48,9 +48,8 @@ module.exports = (Sequelize) => {
       foreignKey: {
         fieldName: 'userId',
         allowNull: false,
-      },
+      }
     });
-  };
-
+  }
   return Course;
-};
+}
