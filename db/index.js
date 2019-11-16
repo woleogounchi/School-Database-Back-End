@@ -4,44 +4,55 @@ const path = require('path');
 const Sequelize = require('sequelize');
 
 // Instantiate an instance of the Sequelize class and configure 
-// the instance to use the fsjstd-restapi.db SQLite database
-const sequelize = new Sequelize({
+// it to use the fsjstd-restapi.db SQLite database
+console.info('Instantiating and configuring the Sequelize object instance...');
+
+const options = {
   dialect: 'sqlite',
   storage: 'fsjstd-restapi.db',
-});
-const models = {}; 
-// Use authenticate() to test the connection to the 
-// database and log a message to the console indicating
-// if the connection was successfully made or failed
+}
+
+const sequelize = new Sequelize(options);
+
+const models = {};
+
+// Use the authenticate() method to test the connection to the database
+console.log('Testing the connection to the database...');
+
 (async () => {
+  try {
+    // Test the connection to the database
+    console.log('Connection to the database successful!');
     await sequelize.authenticate();
 
-    try {
-        console.log('Connection successful');
-        fs
-            .readdirSync(path.join(__dirname, 'models'))
-            .forEach((file) => {
-                console.log(`Importing database model file ${file}`);
-                const model = sequelize.import(path.join(__dirname, 'models', file));
-                models[model.name] = model;
-            });
+    // Sync the models
+    console.log('Synchronizing the models with the database...');
+    await sequelize.sync({ force: true });
 
+    // Import all of the models.
+    fs
+        .readdirSync(path.join(__dirname, 'models'))
+        .forEach((file) => {
+        console.info(`Importing database model from file: ${file}`);
+        const model = sequelize.import(path.join(__dirname, 'models', file));
+        models[model.name] = model;
+    });
+
+        // If available, call method to create associations.
         Object.keys(models).forEach((modelName) => {
-            if (models[modelName].associate) {
-                console.log(`Configuring the association for the ${modelName} model...`);
-                models[modelName].associate(models);
-            }
-        });
-    } catch (err) {
-        console.log('Sorry there was a problem connecting')
-    }
-
+        if (models[modelName].associate) {
+        console.info(`Configuring the associations for the ${modelName} model...`);
+        models[modelName].associate(models);
+        }
+    });
+  } catch(error) {
+    console.log('Sorry there was a problem connecting')
+  }
 })();
 
-const db = {
+
+module.exports = {
   sequelize,
   Sequelize,
-  models: {},
+  models,
 };
-
-module.exports = db;
