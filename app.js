@@ -3,7 +3,9 @@
 // load modules
 const express = require('express');
 const morgan = require('morgan');
-const { sequelize, models } = require('./db')
+const routes = require('./routes');
+const { sequelize, models } = require('./db');
+
 
 // we declare the User and Course variables and initialize them to 
 // the individual User and Course models available on the models object
@@ -19,6 +21,7 @@ const app = express();
 app.use(morgan('dev'));
 
 // TODO setup your api routes here
+app.use('/api', routes)
 
 // setup a friendly greeting for the root route
 app.get('/', (req, res) => {
