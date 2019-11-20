@@ -118,6 +118,26 @@ router.post('/users', [
 /* Create the course routes */
 
 // GET /api/courses 200 - Returns a list of courses
+router.get('/courses', asyncHandler(async(req, res, next) => {
+  try {
+    const courses = await Course.findAll({
+      attributes: {
+        exclude: ['createdAt', 'updatedAt']
+      },
+      include: [
+        {
+          model: User,
+          attributes: {
+            exclude: ['emailAddress','password','createdAt', 'updatedAt']
+          }
+        }
+      ]
+    });
+    res.json(courses);
+  } catch (error) {
+    next(error);
+  }
+}));
 
 
 // GET /api/courses/:id 200 - Returns a the course
