@@ -141,11 +141,55 @@ router.get('/courses', asyncHandler(async(req, res, next) => {
 
 
 // GET /api/courses/:id 200 - Returns a the course
-
-// POST /api/courses 201 - Creates a course, sets the Location header 
-// to the URI for the course, and returns no content
+router.get('/courses/:id', asyncHandler(async(req, res, next) => {
+  try {
+    const course = await Course.findAll({
+      where: {
+        id: req.params.id
+      },
+      attributes: {
+        exclude: ['createdAt', 'updatedAt']
+      },
+      include: [
+        {
+          model: User,
+          attributes: {
+            exclude: ['emailAddress','password','createdAt', 'updatedAt']
+          }
+        }
+      ]
+    });
+    if (course) {
+      res.json(course);
+    } else {
+      res.status(400).withMessage('Sorry course not found');
+    }
+  } catch (error) {
+    next(error)
+  }
+}));
+// POST /api/courses 201 - Creates a course, sets the Location header to the URI for the course, and returns no content
+router.post('/courses', authenticateUser, asyncHandler(async(req, res, next) => {
+  try {
+    await Course.create(req.body);
+    const courseCreated = await Course.findAll({ 
+      limit: 1, 
+      order: [
+        [ 'createdAt', 'DESC' ]
+      ] 
+    });
+    res.status(201).location('/api/courses/' + courseCreated[0].dataValues.id).end()
+  } catch (error) {
+    if (error.name === 'SequelizeValidationError') {
+      const errorMessage = error.errors.map(error => error.message);
+      const error = instantiateError(400, errorMessage);
+      next(error);
+    }
+  }
+}));
 
 //PUT /api/courses/:id 204 - Updates a course and returns no content
+
 
 // DELETE /api/courses/:id 204 - Deletes a course and returns no content
 
