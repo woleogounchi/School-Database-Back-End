@@ -5,9 +5,10 @@ const { check, validationResult } = require('express-validator/check');
 const bcryptjs = require('bcryptjs');
 const auth = require('basic-auth');
 const db = require('./db');
-
 // Require models 
 const { Course, User } = db.models;
+// Construct a router instance.
+const router = express.Router();
 
 // Handler function to wrap each route.
 function asyncHandler(cb){
@@ -19,9 +20,6 @@ function asyncHandler(cb){
       }
   }
 }
-
-// Construct a router instance.
-const router = express.Router();
 
 /* Create the user routes */
 
@@ -189,8 +187,52 @@ router.post('/courses', authenticateUser, asyncHandler(async(req, res, next) => 
 }));
 
 //PUT /api/courses/:id 204 - Updates a course and returns no content
-
+router.put('/courses/:id', authenticateUser, asyncHandler(async(req, res, next) => {
+  const course = await Course.findByPk(req.params.id);
+  try {
+    if (isEmpty(req.body)) {
+      res.status(400).json({ message: "In order to update the course, please provide title and description values in the body" });
+    } else {
+      const currentUser = req.currentUser;
+      if (currentUser[0].dataValues.id === course.dataValues.userId) {
+        await course.update(req.body);
+        res.status(204).end();
+      } else {
+        res.status(403).json({ message: "Sorry, you can only edit the course that you own." })
+      }
+    }
+  } catch (error) {
+    if (error.name === 'SequelizeValidationError') {
+      const errorMessage = error.errors.map(error => error.message);
+      const err = instantiateError(400, errorMessage);
+      next(err);
+    } else if (error.name === 'TypeError') {
+      const err = instantiateError(400, "Sorry, a non existing course could not be edited.")
+      next(err);
+    }
+  }
+}));
 
 // DELETE /api/courses/:id 204 - Deletes a course and returns no content
+router.delete('/courses/:id', authenticateUser, asyncHandler(async(req, res, next) => {
+  const allcourse = await Course.findAll();
+  try {
+    const currentUser = req.currentUser;
+    const course = await Course.findByPk(req.params.id);
+    if (currentUser[0].dataValues.id === course.dataValues.userId) {
+      await course.destroy();
+      res.status(204).end();
+    } else {
+      res.status(403).json({ message: "Sorry, you can only delete your own course." })
+    }
+  } catch (error) {
+    if (error.name === 'TypeError') {
+      const err = instantiateError(400, "Sorry, you can only delete an existing course");
+      next(err);
+    } else {
+      next(error);
+    }
+  }
+}));
 
 module.exports = router;
