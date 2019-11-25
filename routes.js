@@ -35,14 +35,13 @@ const authenticateUser = (req, res, next) => {
   const credentials = auth(req);
 
   if (credentials) {
-    // Look for a user whose `username` matches the credentials `name` property.
-    const user = users.find(u => u.username === credentials.name);
-    if (user) {
+    // Use the user's email address to attempt to retrieve the user from the database
+    const user = await User.findAll({ where: { emailAddress : credentials.name } });
+    if (user.length > 0) {
       const authenticated = bcryptjs
-        .compareSync(credentials.pass, user.password);
+        .compareSync(credentials.pass, user[0].dataValues.password);
       if (authenticated) {
         console.log(`Authentication successful for username: ${user.username}`);
-
         // Store the user on the Request object.
         req.currentUser = user;
       } else {
@@ -68,8 +67,8 @@ router.get('/users', authenticateUser, (req, res) => {
   const user = req.currentUser;
 
   res.json({
-    name: user.name,
-    username: user.username,
+    firstname: users[0].dataValues.firstname,
+    lastname: users[0].dataValues.lastname 
   });
 
   // Set the status to 200 and end the response.
@@ -78,12 +77,20 @@ router.get('/users', authenticateUser, (req, res) => {
 
 // Route that creates a new user.
 router.post('/users', [
-  check('name')
+  check('firstName')
     .exists({ checkNull: true, checkFalsy: true })
-    .withMessage('Please provide a value for "name"'),
-  check('username')
+    .withMessage('Please provide a value for "first name"'),
+  check('lastName')
     .exists({ checkNull: true, checkFalsy: true })
-    .withMessage('Please provide a value for "username"'),
+    .withMessage('Please provide a value for "last name"'),
+  check('emailAddress')
+    .exists({ checkNull: true, checkFalsy: true })
+    .withMessage('Please provide a value for "email address"')
+    .custom(emailAddress => {
+      if (alreadyHaveEmail(emailAddress)) {
+        throw new Error('Email Address already registered')
+      }
+    }),
   check('password')
     .exists({ checkNull: true, checkFalsy: true })
     .withMessage('Please provide a value for "password"'),
