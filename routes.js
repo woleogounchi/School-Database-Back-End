@@ -23,8 +23,7 @@ function asyncHandler(cb){
 
 /* Create the user routes */
 
-// This array is used to keep track of user records
-// as they are created.
+// Array to keep track of user record  as they are created.
 const users = [];
 
 // Middleware to authenticate the request using Basic Authentication.
@@ -66,7 +65,17 @@ const authenticateUser = async (req, res, next) => {
 };
 
 // GET /api/users 200 - Returns the currently authenticated user
-router.get('/users', asyncHandler(async (req, res) => {
+router.get('/users', authenticateUser, asyncHandler(async (req, res) => {
+  const user = await User.findByPk(req.currentUser.dataValues.id, {
+    attributes: {
+      exclude: ['password', 'createdAt', 'updatedAt']
+    }
+  });
+  res.status(200).json(user);
+}))
+
+// POST /api/users 201 - Creates a user, sets the Location header to "/", and returns no content
+router.post('/users', asyncHandler(async (req, res) => {
   try {
     const user = req.body;
     if (user.password) {
@@ -136,6 +145,70 @@ router.get('/courses/:id', asyncHandler(async(req, res) => {
     } else {
       res.status(400).withMessage('Sorry course not found');
     }
+}));
+
+// POST /api/courses 201 - Creates a course, sets the Location header to the URI for the course, and returns no content
+router.post('/courses', authenticateUser, asyncHandler(async (req, res) => {
+  const user = req.currentUser;
+  try {
+    req.body.userId = user.dataValues.id;
+    const course = await Course.create(req.body);
+    const courseId = course.dataValues.id;
+    res.status(201).set('Location', `/courses/${courseId}`).end()
+  } catch (error) {
+    if (error.name === 'SequelizeValidationError') {
+      const errorMessages = error.errors.map(error => error.message);
+      res.status(400).json({ errors: errorMessages });
+    } else {
+      throw error;
+    }
+  }
+}));
+
+// PUT /api/courses/:id 204 - Updates a course and returns no content
+router.put('/courses/:id', authenticateUser, asyncHandler(async (req, res) => {
+  const user = req.currentUser;
+  try {
+    const course = await Course.findByPk(req.params.id);
+    if (course) {
+      if (course.userId === user.dataValues.id) {
+        if (req.body.title && req.body.description) {
+          req.body.userId = user.dataValues.id;
+          await course.update(req.body);
+          res.status(204).end();
+        } else {
+          res.status(400).json({ message: "Please provide title and description"});
+        }
+      } else {
+        res.status(403).json({ message: "Access denied" });
+      }
+    } else {
+      res.sendStatus(404);
+    }
+  } catch (error) {
+    if (error.name === 'SequelizeValidationError') {
+      const errorMessages = error.errors.map(error => error.message);
+      res.status(400).json({ errors: errorMessages });
+    } else {
+      throw error;
+    }
+  }
+}));
+
+// DELETE /api/courses/:id 204 - Deletes a course and returns no content
+router.delete('/courses/:id', authenticateUser, asyncHandler(async (req, res) => {
+  const user = req.currentUser;
+  const course = await Course.findByPk(req.params.id);
+  if (course) {
+    if (course.userId === user.dataValues.id) {
+      await course.destroy();
+      res.status(204).end();
+    } else {
+      res.status(403).json({ message: "Access denied"});
+    }
+  } else {
+    res.sendStatus(404);
+  }
 }));
 
 module.exports = router;
