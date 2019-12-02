@@ -14,7 +14,10 @@ const options = {
 
 const sequelize = new Sequelize(options);
 
-const models = {};
+const models = [
+  'user',
+  'course'
+]
 
 // Use the authenticate() method to test the connection to the database
 console.log('Testing the connection to the database...');

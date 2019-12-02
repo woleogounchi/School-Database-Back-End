@@ -4,18 +4,15 @@
 const express = require('express');
 const morgan = require('morgan');
 const routes = require('./routes');
-const { sequelize, models } = require('./db');
-
-
-// we declare the User and Course variables and initialize them to 
-// the individual User and Course models available on the models object
-const { User, Course } = models;
 
 // variable to enable global error logging
 const enableGlobalErrorLogging = process.env.ENABLE_GLOBAL_ERROR_LOGGING === 'true';
 
 // create the Express app
 const app = express();
+
+// use express middleware to parse incoming json data 
+app.use(express.json());
 
 // setup morgan which gives us http request logging
 app.use(morgan('dev'));
