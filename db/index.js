@@ -1,7 +1,7 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
-const Sequelize = require('sequelize');
+const { Sequelize } = require('sequelize');
 
 // Instantiate an instance of the Sequelize class and configure 
 // it to use the fsjstd-restapi.db SQLite database
@@ -14,10 +14,7 @@ const options = {
 
 const sequelize = new Sequelize(options);
 
-const models = [
-  'user',
-  'course'
-]
+const models = {};
 
 // Use the authenticate() method to test the connection to the database
 console.log('Testing the connection to the database...');
