@@ -1,10 +1,10 @@
 'use strict';
 
+// Import depencies
 const express = require('express');
 const bcryptjs = require('bcryptjs');
 const auth = require('basic-auth');
-const { check, validationResult } = require('express-validator');
-
+// Import the models
 const data = require("./db").models;
 
 // Construct a router instance.
